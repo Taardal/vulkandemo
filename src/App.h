@@ -42,7 +42,7 @@ namespace Vulkandemo {
         VulkanGraphicsPipeline* vulkanGraphicsPipeline;
         std::vector<VulkanFramebuffer> framebuffers;
         VulkanCommandPool* vulkanCommandPool;
-        std::vector<VulkanCommandBuffer*> vulkanCommandBuffers;
+        std::vector<VulkanCommandBuffer> vulkanCommandBuffers;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;

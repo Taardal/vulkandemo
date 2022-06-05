@@ -152,7 +152,7 @@ namespace Vulkandemo {
         VD_LOG_INFO("Destroyed Vulkan graphics pipeline layout");
     }
 
-    void VulkanGraphicsPipeline::bind(VulkanCommandBuffer* vulkanCommandBuffer) const {
-        vkCmdBindPipeline(vulkanCommandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    void VulkanGraphicsPipeline::bind(const VulkanCommandBuffer& vulkanCommandBuffer) const {
+        vkCmdBindPipeline(vulkanCommandBuffer.getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
 }

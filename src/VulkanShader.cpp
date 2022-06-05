@@ -16,7 +16,7 @@ namespace Vulkandemo {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = bytes.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(bytes.data());
+        createInfo.pCode = (const uint32_t*) bytes.data();
 
         if (vkCreateShaderModule(vulkanDevice->getDevice(), &createInfo, ALLOCATOR, &shaderModule) != VK_SUCCESS) {
             VD_LOG_ERROR("Could not create Vulkan shader module");

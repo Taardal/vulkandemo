@@ -63,7 +63,7 @@ namespace Vulkandemo {
         VD_LOG_INFO("Destroyed Vulkan render pass");
     }
 
-    void VulkanRenderPass::begin(VulkanCommandBuffer* vulkanCommandBuffer, const VulkanFramebuffer& vulkanFramebuffer) const {
+    void VulkanRenderPass::begin(const VulkanCommandBuffer& vulkanCommandBuffer, const VulkanFramebuffer& vulkanFramebuffer) const {
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
@@ -80,11 +80,11 @@ namespace Vulkandemo {
         renderPassInfo.pClearValues = &clearColor;
         renderPassInfo.clearValueCount = 1;
 
-        vkCmdBeginRenderPass(vulkanCommandBuffer->getCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(vulkanCommandBuffer.getCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    void VulkanRenderPass::end(VulkanCommandBuffer* vulkanCommandBuffer) const {
-        vkCmdEndRenderPass(vulkanCommandBuffer->getCommandBuffer());
+    void VulkanRenderPass::end(const VulkanCommandBuffer& vulkanCommandBuffer) const {
+        vkCmdEndRenderPass(vulkanCommandBuffer.getCommandBuffer());
     }
 
 }

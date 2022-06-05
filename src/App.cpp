@@ -152,7 +152,8 @@ namespace Vulkandemo {
             return false;
         }
         for (VkCommandBuffer vkCommandBuffer : vkCommandBuffers) {
-            vulkanCommandBuffers.push_back(new VulkanCommandBuffer(vkCommandBuffer));
+            VulkanCommandBuffer commandBuffer(vkCommandBuffer);
+            vulkanCommandBuffers.push_back(commandBuffer);
         }
         VD_LOG_INFO("Allocated [{}] Vulkan command buffers", vulkanCommandBuffers.size());
         return true;
@@ -255,9 +256,9 @@ namespace Vulkandemo {
 
         vkResetFences(vulkanDevice->getDevice(), fenceCount, &inFlightFence);
 
-        VulkanCommandBuffer* vulkanCommandBuffer = vulkanCommandBuffers[currentFrame];
-        vulkanCommandBuffer->reset();
-        vulkanCommandBuffer->begin();
+        const VulkanCommandBuffer& vulkanCommandBuffer = vulkanCommandBuffers[currentFrame];
+        vulkanCommandBuffer.reset();
+        vulkanCommandBuffer.begin();
         vulkanRenderPass->begin(vulkanCommandBuffer, framebuffers.at(swapChainImageIndex));
         vulkanGraphicsPipeline->bind(vulkanCommandBuffer);
 
@@ -265,10 +266,10 @@ namespace Vulkandemo {
         constexpr uint32_t instanceCount = 1;
         constexpr uint32_t firstVertex = 0;
         constexpr uint32_t firstInstance = 0;
-        vkCmdDraw(vulkanCommandBuffer->getCommandBuffer(), vertexCount, instanceCount, firstVertex, firstInstance);
+        vkCmdDraw(vulkanCommandBuffer.getCommandBuffer(), vertexCount, instanceCount, firstVertex, firstInstance);
 
         vulkanRenderPass->end(vulkanCommandBuffer);
-        if (!vulkanCommandBuffer->end()) {
+        if (!vulkanCommandBuffer.end()) {
             VD_LOG_CRITICAL("Could not end frame");
             throw std::runtime_error("Could not end frame");
         }
@@ -282,7 +283,7 @@ namespace Vulkandemo {
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        VkCommandBuffer commandBuffer = vulkanCommandBuffer->getCommandBuffer();
+        VkCommandBuffer commandBuffer = vulkanCommandBuffer.getCommandBuffer();
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 

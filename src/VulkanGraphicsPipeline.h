@@ -27,7 +27,7 @@ namespace Vulkandemo {
 
         void terminate();
 
-        void bind(VulkanCommandBuffer* vulkanCommandBuffer) const;
+        void bind(const VulkanCommandBuffer& vulkanCommandBuffer) const;
     };
 
 }

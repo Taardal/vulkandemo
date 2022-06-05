@@ -29,9 +29,9 @@ namespace Vulkandemo {
 
         void terminate();
 
-        void begin(VulkanCommandBuffer* vulkanCommandBuffer, const VulkanFramebuffer& vulkanFramebuffer) const;
+        void begin(const VulkanCommandBuffer& vulkanCommandBuffer, const VulkanFramebuffer& vulkanFramebuffer) const;
 
-        void end(VulkanCommandBuffer* vulkanCommandBuffer) const;
+        void end(const VulkanCommandBuffer& vulkanCommandBuffer) const;
     };
 
 }

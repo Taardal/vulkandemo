@@ -9,9 +9,8 @@
 #include "VulkanSwapChain.h"
 #include "VulkanRenderPass.h"
 #include "VulkanGraphicsPipeline.h"
-#include "VulkanFramebuffer.h"
 #include "VulkanCommandPool.h"
-#include "VulkanCommandBuffer.h"
+#include "VulkanRenderer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -40,14 +39,8 @@ namespace Vulkandemo {
         VulkanShader* fragmentShader;
         VulkanRenderPass* vulkanRenderPass;
         VulkanGraphicsPipeline* vulkanGraphicsPipeline;
-        std::vector<VulkanFramebuffer> framebuffers;
         VulkanCommandPool* vulkanCommandPool;
-        std::vector<VulkanCommandBuffer> vulkanCommandBuffers;
-        std::vector<VkSemaphore> imageAvailableSemaphores;
-        std::vector<VkSemaphore> renderFinishedSemaphores;
-        std::vector<VkFence> inFlightFences;
-        uint32_t currentFrame = 0;
-        bool windowResized = false;
+        VulkanRenderer* vulkanRenderer;
 
     public:
         explicit App(Config config);
@@ -61,19 +54,11 @@ namespace Vulkandemo {
 
         bool initializeSwapChain();
 
-        bool initializeCommandBuffers();
-
-        bool initializeSyncObjects();
-
         void terminate();
-
-        void terminateSyncObjects();
 
         void terminateSwapChain();
 
         bool recreateSwapChain();
-
-        void drawFrame();
     };
 
 }

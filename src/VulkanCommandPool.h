@@ -2,6 +2,7 @@
 
 #include "VulkanPhysicalDevice.h"
 #include "VulkanDevice.h"
+#include "VulkanCommandBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -24,6 +25,8 @@ namespace Vulkandemo {
         bool initialize();
 
         void terminate();
+
+        std::vector<VulkanCommandBuffer> allocateCommandBuffers(uint32_t count) const;
     };
 
 }

@@ -102,10 +102,46 @@ namespace Vulkandemo {
             VD_LOG_ERROR("Could not initialize Vulkan vertex buffer");
             return false;
         }
+        if (!initializeIndexBuffer()) {
+            VD_LOG_ERROR("Could not initialize Vulkan index buffer");
+            return false;
+        }
         if (!initializeSyncObjects()) {
             VD_LOG_ERROR("Could not create Vulkan sync objects (semaphores & fences)");
             return false;
         }
+        return true;
+    }
+
+    bool App::initializeIndexBuffer() {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        constexpr VkBufferUsageFlags stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        constexpr VkMemoryPropertyFlags stagingBufferMemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        createBuffer(bufferSize, stagingBufferUsage, stagingBufferMemoryProperties, stagingBuffer, stagingBufferMemory);
+
+        void* memory;
+        constexpr VkDeviceSize stagingBufferMemoryOffset = 0;
+        constexpr VkMemoryMapFlags stagingBufferMemoryMapFlags = 0;
+        vkMapMemory(vulkanDevice->getDevice(), stagingBufferMemory, stagingBufferMemoryOffset, bufferSize, stagingBufferMemoryMapFlags, &memory);
+        memcpy(memory, indices.data(), (size_t) bufferSize);
+        vkUnmapMemory(vulkanDevice->getDevice(), stagingBufferMemory);
+
+        constexpr VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        constexpr VkMemoryPropertyFlags bufferMemoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        if (!createBuffer(bufferSize, bufferUsage, bufferMemoryProperties, indexBuffer, indexBufferDeviceMemory)) {
+            VD_LOG_ERROR("Could not create index buffer");
+            return false;
+        }
+
+        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+        VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
+        vkDestroyBuffer(vulkanDevice->getDevice(), stagingBuffer, allocator);
+        vkFreeMemory(vulkanDevice->getDevice(), stagingBufferMemory, allocator);
+
         return true;
     }
 
@@ -226,6 +262,12 @@ namespace Vulkandemo {
         return -1;
     }
 
+    void App::terminateIndexBuffer() {
+        VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
+        vkDestroyBuffer(vulkanDevice->getDevice(), indexBuffer, allocator);
+        vkFreeMemory(vulkanDevice->getDevice(), indexBufferDeviceMemory, allocator);
+    }
+
     void App::terminateVertexBuffer() {
         VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
         vkDestroyBuffer(vulkanDevice->getDevice(), vertexBuffer, allocator);
@@ -300,6 +342,7 @@ namespace Vulkandemo {
     void App::terminate() {
         VD_LOG_INFO("Terminating...");
         terminateSyncObjects();
+        terminateIndexBuffer();
         terminateVertexBuffer();
         terminateRenderingObjects();
         fragmentShader->terminate();
@@ -384,7 +427,7 @@ namespace Vulkandemo {
         vkResetFences(vulkanDevice->getDevice(), fenceCount, &inFlightFence);
 
         /*
-         * Recording
+         * Command recording
          */
 
         const VulkanCommandBuffer& vulkanCommandBuffer = vulkanCommandBuffers[currentFrame];
@@ -395,15 +438,20 @@ namespace Vulkandemo {
         vulkanGraphicsPipeline->bind(vulkanCommandBuffer);
 
         VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
+        VkDeviceSize vertexBufferOffsets[] = {0};
         constexpr uint32_t firstBinding = 0;
         constexpr uint32_t bindingCount = 1;
-        vkCmdBindVertexBuffers(vulkanCommandBuffer.getCommandBuffer(), firstBinding, bindingCount, vertexBuffers, offsets);
+        vkCmdBindVertexBuffers(vulkanCommandBuffer.getCommandBuffer(), firstBinding, bindingCount, vertexBuffers, vertexBufferOffsets);
+
+        constexpr VkDeviceSize indexBufferOffset = 0;
+        constexpr VkIndexType indexType = VK_INDEX_TYPE_UINT16;
+        vkCmdBindIndexBuffer(vulkanCommandBuffer.getCommandBuffer(), indexBuffer, indexBufferOffset, indexType);
 
         constexpr uint32_t instanceCount = 1;
         constexpr uint32_t firstVertex = 0;
+        constexpr int32_t vertexOffset = 0;
         constexpr uint32_t firstInstance = 0;
-        vkCmdDraw(vulkanCommandBuffer.getCommandBuffer(), (uint32_t) vertices.size(), instanceCount, firstVertex, firstInstance);
+        vkCmdDrawIndexed(vulkanCommandBuffer.getCommandBuffer(), (uint32_t) indices.size(), instanceCount, firstVertex, vertexOffset, firstInstance);
 
         vulkanRenderPass->end(vulkanCommandBuffer);
 
@@ -413,7 +461,7 @@ namespace Vulkandemo {
         }
 
         /*
-         * Submission
+         * Command submission
          */
 
         VkSubmitInfo submitInfo{};
@@ -444,7 +492,7 @@ namespace Vulkandemo {
         }
 
         /*
-         * Presentation
+         * Image presentation
          */
 
         VkPresentInfoKHR presentInfo{};

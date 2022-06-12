@@ -44,18 +44,26 @@ namespace Vulkandemo {
         VulkanRenderPass* vulkanRenderPass;
         VulkanGraphicsPipeline* vulkanGraphicsPipeline;
         std::vector<VulkanFramebuffer> framebuffers;
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferDeviceMemory;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
         uint32_t currentFrame = 0;
         bool windowResized = false;
 
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferDeviceMemory;
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferDeviceMemory;
+
         const std::vector<Vertex> vertices = {
-                {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+                {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        };
+
+        const std::vector<uint16_t> indices = {
+                0, 1, 2, 2, 3, 0
         };
 
     public:
@@ -68,11 +76,15 @@ namespace Vulkandemo {
     private:
         bool initialize();
 
+        bool initializeIndexBuffer();
+
         bool initializeVertexBuffer();
 
         bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties, VkBuffer& buffer, VkDeviceMemory& bufferDeviceMemory);
 
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) const;
+
+        void terminateIndexBuffer();
 
         void terminateVertexBuffer();
 

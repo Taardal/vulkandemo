@@ -12,6 +12,7 @@
 #include "VulkanRenderPass.h"
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanBuffer.h"
 #include "Vertex.h"
 
 #include <vulkan/vulkan.h>
@@ -43,17 +44,14 @@ namespace Vulkandemo {
         VulkanSwapChain* vulkanSwapChain;
         VulkanRenderPass* vulkanRenderPass;
         VulkanGraphicsPipeline* vulkanGraphicsPipeline;
+        VulkanBuffer* vertexBuffer;
+        VulkanBuffer* indexBuffer;
         std::vector<VulkanFramebuffer> framebuffers;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
         uint32_t currentFrame = 0;
         bool windowResized = false;
-
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferDeviceMemory;
-        VkBuffer indexBuffer;
-        VkDeviceMemory indexBufferDeviceMemory;
 
         const std::vector<Vertex> vertices = {
                 {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},

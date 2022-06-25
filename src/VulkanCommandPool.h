@@ -27,7 +27,13 @@ namespace Vulkandemo {
 
         void terminate();
 
+        VulkanCommandBuffer allocateCommandBuffer() const;
+
+        void freeCommandBuffer(const VulkanCommandBuffer& commandBuffer) const;
+
         std::vector<VulkanCommandBuffer> allocateCommandBuffers(uint32_t count) const;
+
+        void freeCommandBuffers(std::vector<VulkanCommandBuffer>) const;
     };
 
 }

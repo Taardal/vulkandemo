@@ -148,11 +148,13 @@ namespace Vulkandemo {
     bool App::initializeVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferDeviceMemory;
-        constexpr VkBufferUsageFlags stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        constexpr VkMemoryPropertyFlags stagingBufferMemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        if (!createBuffer(bufferSize, stagingBufferUsage, stagingBufferMemoryProperties, stagingBuffer, stagingBufferDeviceMemory)) {
+        VulkanBuffer::Config stagingBufferConfig{};
+        stagingBufferConfig.Size = bufferSize;
+        stagingBufferConfig.Usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingBufferConfig.MemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        VulkanBuffer stagingBuffer(vulkanPhysicalDevice, vulkanDevice);
+        if (!stagingBuffer.initialize(stagingBufferConfig)) {
             VD_LOG_ERROR("Could not create staging vertex buffer");
             return false;
         }
@@ -160,60 +162,54 @@ namespace Vulkandemo {
         void* memory;
         constexpr VkDeviceSize stagingBufferMemoryOffset = 0;
         constexpr VkMemoryMapFlags stagingBufferMemoryMapFlags = 0;
-        vkMapMemory(vulkanDevice->getDevice(), stagingBufferDeviceMemory, stagingBufferMemoryOffset, bufferSize, stagingBufferMemoryMapFlags, &memory);
-        memcpy(memory, vertices.data(), (size_t) bufferSize);
-        vkUnmapMemory(vulkanDevice->getDevice(), stagingBufferDeviceMemory);
+        vkMapMemory(vulkanDevice->getDevice(), stagingBuffer.getDeviceMemory(), stagingBufferMemoryOffset, stagingBufferConfig.Size, stagingBufferMemoryMapFlags, &memory);
+        memcpy(memory, vertices.data(), (size_t) stagingBufferConfig.Size);
+        vkUnmapMemory(vulkanDevice->getDevice(), stagingBuffer.getDeviceMemory());
 
-        constexpr VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        constexpr VkMemoryPropertyFlags bufferMemoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        if (!createBuffer(bufferSize, bufferUsage, bufferMemoryProperties, vertexBuffer, vertexBufferDeviceMemory)) {
+        VulkanBuffer::Config vertexBufferConfig{};
+        stagingBufferConfig.Size = bufferSize;
+        stagingBufferConfig.Usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        stagingBufferConfig.MemoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        if (!vertexBuffer->initialize(vertexBufferConfig)) {
             VD_LOG_ERROR("Could not create vertex buffer");
             return false;
         }
 
         copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-        VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
-        vkDestroyBuffer(vulkanDevice->getDevice(), stagingBuffer, allocator);
-        vkFreeMemory(vulkanDevice->getDevice(), stagingBufferDeviceMemory, allocator);
-
+        stagingBuffer.terminate();
         return true;
     }
 
     void App::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const {
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        commandBufferAllocateInfo.commandPool = vulkanCommandPool->getCommandPool();
-        commandBufferAllocateInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(vulkanDevice->getDevice(), &commandBufferAllocateInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo commandBufferBeginInfo{};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+        VulkanCommandBuffer commandBuffer = vulkanCommandPool->allocateCommandBuffers(1)[0];
+        commandBuffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
         constexpr uint32_t regionCount = 1;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, &copyRegion);
 
-        vkEndCommandBuffer(commandBuffer);
+        if (!commandBuffer.end()) {
+            VD_LOG_ERROR("Could not end Vulkan command buffer");
+            return false;
+        }
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
+
+        VkCommandBuffer vkCommandBuffer = commandBuffer.getCommandBuffer();
+        submitInfo.pCommandBuffers = &vkCommandBuffer;
 
         constexpr uint32_t submitCount = 1;
         VkFence fence = VK_NULL_HANDLE;
         vkQueueSubmit(vulkanDevice->getGraphicsQueue(), submitCount, &submitInfo, fence);
         vkQueueWaitIdle(vulkanDevice->getGraphicsQueue());
 
-        constexpr uint32_t commandBufferCount = 1;
-        vkFreeCommandBuffers(vulkanDevice->getDevice(), vulkanCommandPool->getCommandPool(), commandBufferCount, &commandBuffer);
+        vulkanCommandPool->freeCommandBuffer(commandBuffer);
+        return true;
     }
 
     bool App::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties, VkBuffer& buffer, VkDeviceMemory& bufferDeviceMemory) {
@@ -342,8 +338,8 @@ namespace Vulkandemo {
     void App::terminate() {
         VD_LOG_INFO("Terminating...");
         terminateSyncObjects();
-        terminateIndexBuffer();
-        terminateVertexBuffer();
+        indexBuffer->terminate();
+        vertexBuffer->terminate();
         terminateRenderingObjects();
         fragmentShader->terminate();
         vertexShader->terminate();

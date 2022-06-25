@@ -16,7 +16,7 @@ namespace Vulkandemo {
 
         const VkCommandBuffer getCommandBuffer() const;
 
-        bool begin() const;
+        bool begin(VkCommandBufferUsageFlags flags = 0) const;
 
         bool end() const;
 

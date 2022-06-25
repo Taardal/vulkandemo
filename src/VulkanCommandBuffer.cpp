@@ -12,9 +12,10 @@ namespace Vulkandemo {
         return commandBuffer;
     }
 
-    bool VulkanCommandBuffer::begin() const {
+    bool VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags) const {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = flags;
 
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             VD_LOG_ERROR("Could not begin Vulkan command buffer");
